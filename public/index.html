@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gains Log</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  :root{
+    --bg:#f4f2ee;
+    --surface:#ffffff;
+    --surface-2:#ecebe6;
+    --border:#ddd9d0;
+    --text:#1c1a16;
+    --text-dim:#6b6659;
+    --accent:#e8542a;
+    --accent-ink:#ffffff;
+    --good:#2f8f5b;
+    --bad:#c94848;
+    --kasem:#2f6fed;
+    --moussa:#e8542a;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#161512; --surface:#201e19; --surface-2:#292620; --border:#3a362e;
+      --text:#f3f1ea; --text-dim:#a39c8c; --accent:#ff6b3d; --accent-ink:#1a1006;
+      --good:#4bbf82; --bad:#e5695f; --kasem:#5c9dff; --moussa:#ff6b3d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#161512; --surface:#201e19; --surface-2:#292620; --border:#3a362e;
+    --text:#f3f1ea; --text-dim:#a39c8c; --accent:#ff6b3d; --accent-ink:#1a1006;
+    --good:#4bbf82; --bad:#e5695f; --kasem:#5c9dff; --moussa:#ff6b3d;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    padding-inline:16px; padding-block:24px;
+    display:flex; justify-content:center;
+  }
+  .wrap{width:100%;max-width:720px;}
+  .brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+  h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,7vw,46px);letter-spacing:0.5px;margin:0;line-height:0.9;}
+  .tagline{color:var(--text-dim);font-size:13px;font-weight:500;}
+  .who{font-size:13px;font-weight:600;color:var(--text-dim);display:flex;align-items:center;gap:8px;}
+  .who button{background:none;border:1px solid var(--border);color:var(--text-dim);padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+  .who button:hover{border-color:var(--text-dim);color:var(--text);}
+  .who .icon-btn{width:28px;height:28px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;}
+
+  .settings-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;display:none;}
+  .settings-panel.show{display:block;}
+  .settings-panel h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.3px;margin:0 0 12px;}
+  .settings-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .settings-row label{font-size:12.5px;font-weight:600;color:var(--text-dim);flex:1;min-width:140px;}
+  .settings-row input{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;color:var(--text);font-family:'JetBrains Mono',monospace;width:120px;}
+  .settings-save{background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  .settings-msg{font-size:12px;font-weight:600;color:var(--good);margin-top:8px;min-height:14px;}
+  .settings-note{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+  .pot-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;}
+  .pot-total-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .pot-total-lbl{font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;}
+  .pot-total-num{font-family:'Bebas Neue',sans-serif;font-size:28px;}
+  .pot-people{display:flex;gap:12px;}
+  .pot-person{flex:1;border-radius:12px;padding:12px;border:1px solid var(--border);border-left-width:4px;}
+  .pot-person .who-line{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+  .pot-person .sw{width:9px;height:9px;border-radius:50%;}
+  .pot-person .nm{font-weight:700;font-size:13px;}
+  .pot-person .amt{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;}
+  .pot-person .sub{font-size:11px;color:var(--text-dim);margin-top:4px;font-weight:500;}
+
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px 24px;margin-top:40px;}
+  .login-card h2{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.3px;margin:0 0 4px;}
+  .login-sub{color:var(--text-dim);font-size:13px;margin:0 0 20px;}
+  .person-pick{display:flex;gap:12px;margin-bottom:18px;}
+  .person-btn{flex:1;background:var(--surface-2);border:2px solid var(--border);border-radius:14px;padding:16px 10px;text-align:center;cursor:pointer;font-family:inherit;color:var(--text);transition:border-color .15s;}
+  .person-btn .dot{width:34px;height:34px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;}
+  .person-btn[data-p="kasem"] .dot{background:var(--kasem);}
+  .person-btn[data-p="moussa"] .dot{background:var(--moussa);}
+  .person-btn .nm{font-weight:700;font-size:14px;}
+  .person-btn.active{border-color:var(--accent);}
+  .pin-row{display:flex;gap:10px;}
+  .pin-row input{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:20px;letter-spacing:6px;font-family:'JetBrains Mono',monospace;color:var(--text);text-align:center;min-width:0;}
+  .pin-row input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .go-btn{margin-top:14px;width:100%;background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:13px;font-weight:800;font-size:14px;letter-spacing:0.3px;cursor:pointer;font-family:inherit;}
+  .go-btn:disabled{opacity:0.45;cursor:not-allowed;}
+  .login-msg{font-size:12px;margin-top:10px;min-height:16px;font-weight:600;}
+  .login-msg.err{color:var(--bad);}
+  .login-msg.ok{color:var(--good);}
+  .hint{font-size:11px;color:var(--text-dim);margin-top:12px;}
+
+  .app{display:none;}
+  .app.show{display:block;}
+  .login-card.hide{display:none;}
+
+  .today-card{background:linear-gradient(135deg,var(--accent),color-mix(in srgb, var(--accent) 70%, #000 10%));border-radius:18px;padding:18px 20px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+  .today-card.rest{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+  .today-left .day{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.3px;}
+  .today-left .date{font-size:12px;opacity:0.85;font-weight:600;}
+  .check-btn{background:#fff;color:#1c1a16;border:none;border-radius:10px;padding:12px 20px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .check-btn.done{background:rgba(255,255,255,0.92);color:var(--good);cursor:pointer;}
+  .today-card.rest .check-btn{background:var(--border);color:var(--text-dim);cursor:default;}
+  .today-card.notyet .check-btn{background:var(--border);color:var(--text-dim);cursor:default;}
+
+  .stats-row{display:flex;gap:12px;margin-bottom:20px;}
+  .stat-card{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;}
+  .stat-card .who-line{display:flex;align-items:center;gap:7px;margin-bottom:8px;}
+  .stat-card .sw{width:9px;height:9px;border-radius:50%;}
+  .stat-card .nm{font-weight:700;font-size:13px;}
+  .stat-num{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;}
+  .stat-lbl{font-size:11px;color:var(--text-dim);font-weight:600;margin-top:2px;}
+  .stat-sub{font-size:11px;color:var(--text-dim);margin-top:8px;font-weight:500;}
+
+  .section-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:0.3px;margin:0 0 10px;}
+  .grid-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 14px 6px;margin-bottom:20px;overflow-x:auto;}
+  table{border-collapse:collapse;width:100%;min-width:420px;}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-dim);font-weight:700;text-align:center;padding:6px 4px 10px;}
+  th:first-child{text-align:left;padding-left:2px;}
+  td{padding:8px 4px;text-align:center;border-top:1px solid var(--border);}
+  td:first-child{text-align:left;font-size:12.5px;font-weight:600;color:var(--text-dim);padding-left:2px;}
+  .mark{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .mark.yes{background:var(--good);color:#fff;}
+  .mark.no{background:var(--bad);color:#fff;}
+  .mark.future{background:var(--surface-2);color:var(--text-dim);}
+  .row-today td{background:color-mix(in srgb, var(--accent) 10%, transparent);}
+
+  .missed-list{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;}
+  .missed-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:13px;}
+  .missed-item:first-of-type{border-top:none;}
+  .missed-item .who-line{display:flex;align-items:center;gap:7px;}
+  .missed-item .sw{width:8px;height:8px;border-radius:50%;}
+  .missed-item .d{color:var(--text-dim);font-size:12px;font-weight:500;}
+  .empty-note{color:var(--text-dim);font-size:13px;text-align:center;padding:10px 0;}
+
+  footer{text-align:center;color:var(--text-dim);font-size:11px;margin-top:6px;padding-bottom:4px;}
+  img{max-width:100%;}
+  [hidden]{display:none!important;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div>
+      <h1>Gains Log</h1>
+      <div class="tagline">Mon &middot; Wed &middot; Fri &middot; Sun</div>
+    </div>
+    <div class="who" id="whoBar" hidden>
+      <span id="whoName"></span>
+      <button id="settingsBtn" class="icon-btn" type="button" title="Settings">&#9881;</button>
+      <button id="switchBtn" type="button">switch</button>
+    </div>
+  </div>
+
+  <div class="login-card" id="loginCard">
+    <h2>Who's checking in?</h2>
+    <p class="login-sub">Pick your name and enter your 4-digit PIN. First time picks the PIN.</p>
+    <div class="person-pick">
+      <button class="person-btn" data-p="kasem" type="button">
+        <div class="dot">K</div>
+        <div class="nm">Kasem</div>
+      </button>
+      <button class="person-btn" data-p="moussa" type="button">
+        <div class="dot">M</div>
+        <div class="nm">Moussa</div>
+      </button>
+    </div>
+    <div class="pin-row">
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="&bull; &bull; &bull; &bull;">
+    </div>
+    <button class="go-btn" id="loginGo" type="button" disabled>Select a name first</button>
+    <div class="login-msg" id="loginMsg"></div>
+    <div class="hint">Shared tracker for two — the PIN just keeps you from checking in as each other.</div>
+  </div>
+
+  <div class="app" id="app">
+    <div class="settings-panel" id="settingsPanel">
+      <h3>Settings</h3>
+      <div class="settings-row">
+        <label for="startDateInput">Tracking starts on</label>
+        <input id="startDateInput" type="date">
+      </div>
+      <div class="settings-row">
+        <label for="penaltyInput">Penalty per missed day (&euro;)</label>
+        <input id="penaltyInput" type="number" min="0" step="0.5">
+      </div>
+      <button class="settings-save" id="settingsSave" type="button">Save</button>
+      <div class="settings-msg" id="settingsMsg"></div>
+      <div class="settings-note">Days before the start date aren't tracked or penalized.</div>
+    </div>
+
+    <div class="today-card" id="todayCard">
+      <div class="today-left">
+        <div class="day" id="todayDay">—</div>
+        <div class="date" id="todayDate">—</div>
+      </div>
+      <button class="check-btn" id="checkBtn" type="button">Check in</button>
+    </div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <h2 class="section-title">Last 6 weeks</h2>
+    <div class="grid-card">
+      <table>
+        <thead>
+          <tr><th>Week of</th><th>Mon</th><th>Wed</th><th>Fri</th><th>Sun</th></tr>
+        </thead>
+        <tbody id="gridBody"></tbody>
+      </table>
+    </div>
+
+    <h2 class="section-title">Missed sessions</h2>
+    <div class="missed-list" id="missedList"></div>
+
+    <h2 class="section-title">Penalty pot</h2>
+    <div class="pot-card">
+      <div class="pot-total-row">
+        <span class="pot-total-lbl">Total in the pot</span>
+        <span class="pot-total-num" id="potTotal">&euro;0</span>
+      </div>
+      <div class="pot-people" id="potPeople"></div>
+    </div>
+
+    <footer>Gym days run Mon / Wed / Fri / Sun &middot; data shared between Kasem &amp; Moussa</footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var PEOPLE = {
+    kasem:  { label: "Kasem",  color: "var(--kasem)" },
+    moussa: { label: "Moussa", color: "var(--moussa)" }
+  };
+  var GYM_DOWS = [1,3,5,0];
+
+  var currentUser = null;
+  var currentPin = null;
+  var pickedName = null;
+  var checkinsCache = {};
+  var pollTimer = null;
+
+  function iso(d){
+    var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+dd;
+  }
+  function tomorrowIso(){
+    var t = new Date(); t.setHours(0,0,0,0); t.setDate(t.getDate()+1);
+    return iso(t);
+  }
+  var settings = { startDate: tomorrowIso(), penaltyAmount: 5 };
+  function todayDate(){ return new Date(); }
+  function isGymDay(d){ return GYM_DOWS.indexOf(d.getDay())!==-1; }
+  function isTracked(d){ return iso(d) >= settings.startDate; }
+  function startOfWeek(d){
+    var x = new Date(d);
+    var dow = x.getDay();
+    var diff = dow===0 ? -6 : 1-dow;
+    x.setDate(x.getDate()+diff);
+    x.setHours(0,0,0,0);
+    return x;
+  }
+  function fmtShort(d){ return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+
+  function saveSession(name, pin){
+    try{
+      sessionStorage.setItem('gains-log-user', name);
+      sessionStorage.setItem('gains-log-pin', pin);
+    }catch(e){}
+  }
+  function loadSession(){
+    try{ return { name: sessionStorage.getItem('gains-log-user'), pin: sessionStorage.getItem('gains-log-pin') }; }
+    catch(e){ return { name:null, pin:null }; }
+  }
+  function clearSession(){
+    try{ sessionStorage.removeItem('gains-log-user'); sessionStorage.removeItem('gains-log-pin'); }catch(e){}
+  }
+
+  async function api(path, opts){
+    opts = opts || {};
+    var res = await fetch('/api/'+path, {
+      method: opts.method || 'GET',
+      headers: opts.body ? {'content-type':'application/json'} : undefined,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    var data = await res.json().catch(function(){ return {}; });
+    if(!res.ok) throw Object.assign(new Error(data.error||'request failed'), {status:res.status, data:data});
+    return data;
+  }
+
+  var loginCard = document.getElementById('loginCard');
+  var app = document.getElementById('app');
+  var whoBar = document.getElementById('whoBar');
+  var whoName = document.getElementById('whoName');
+  var switchBtn = document.getElementById('switchBtn');
+  var pinInput = document.getElementById('pinInput');
+  var loginGo = document.getElementById('loginGo');
+  var loginMsg = document.getElementById('loginMsg');
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsPanel = document.getElementById('settingsPanel');
+  var startDateInput = document.getElementById('startDateInput');
+  var penaltyInput = document.getElementById('penaltyInput');
+  var settingsSave = document.getElementById('settingsSave');
+  var settingsMsg = document.getElementById('settingsMsg');
+
+  settingsBtn.addEventListener('click', function(){
+    startDateInput.value = settings.startDate;
+    penaltyInput.value = settings.penaltyAmount;
+    settingsMsg.textContent = '';
+    settingsPanel.classList.toggle('show');
+  });
+
+  settingsSave.addEventListener('click', function(){
+    var newStart = startDateInput.value || settings.startDate;
+    var newPenalty = parseFloat(penaltyInput.value);
+    if(isNaN(newPenalty) || newPenalty < 0) newPenalty = settings.penaltyAmount;
+    settingsSave.disabled = true;
+    settingsSave.textContent = 'Saving…';
+    api('settings', {method:'POST', body:{startDate:newStart, penaltyAmount:newPenalty}}).then(function(res){
+      settings.startDate = res.settings.startDate;
+      settings.penaltyAmount = res.settings.penaltyAmount;
+      settingsMsg.textContent = 'Saved.';
+      renderAll();
+    }).catch(function(){
+      settingsMsg.textContent = 'Could not save — try again.';
+    }).then(function(){
+      settingsSave.disabled = false;
+      settingsSave.textContent = 'Save';
+    });
+  });
+
+  document.querySelectorAll('.person-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.person-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      pickedName = btn.getAttribute('data-p');
+      loginGo.disabled = false;
+      loginGo.textContent = 'Continue as ' + PEOPLE[pickedName].label;
+      setLoginMsg('','');
+      pinInput.focus();
+    });
+  });
+
+  pinInput.addEventListener('input', function(){
+    pinInput.value = pinInput.value.replace(/\D/g,'').slice(0,4);
+  });
+  pinInput.addEventListener('keydown', function(e){ if(e.key==='Enter') attemptLogin(); });
+  loginGo.addEventListener('click', attemptLogin);
+  switchBtn.addEventListener('click', function(){
+    clearSession();
+    currentUser = null; currentPin = null;
+    if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+    app.classList.remove('show');
+    loginCard.classList.remove('hide');
+    whoBar.hidden = true;
+    pinInput.value = '';
+    setLoginMsg('','');
+  });
+
+  function setLoginMsg(text, kind){
+    loginMsg.textContent = text;
+    loginMsg.className = 'login-msg' + (kind ? ' '+kind : '');
+  }
+
+  function attemptLogin(){
+    if(!pickedName) return;
+    var pin = pinInput.value;
+    if(pin.length!==4){ setLoginMsg('Enter your 4-digit PIN.', 'err'); return; }
+    loginGo.disabled = true;
+    loginGo.textContent = 'Checking…';
+    api('login', {method:'POST', body:{name:pickedName, pin:pin}}).then(function(res){
+      if(res.created) setLoginMsg('PIN set. Welcome, '+PEOPLE[pickedName].label+'.', 'ok');
+      loginSuccess(pickedName, pin);
+    }).catch(function(err){
+      setLoginMsg(err.status===401 ? 'Wrong PIN.' : (err.message || 'Could not reach the server.'), 'err');
+      loginGo.disabled = false;
+      loginGo.textContent = 'Continue as ' + PEOPLE[pickedName].label;
+    });
+  }
+
+  function loginSuccess(name, pin){
+    currentUser = name;
+    currentPin = pin;
+    saveSession(name, pin);
+    setTimeout(function(){
+      loginCard.classList.add('hide');
+      app.classList.add('show');
+      whoBar.hidden = false;
+      whoName.textContent = PEOPLE[name].label;
+      startPolling();
+    }, 200);
+  }
+
+  var todayCard = document.getElementById('todayCard');
+  var todayDay = document.getElementById('todayDay');
+  var todayDateEl = document.getElementById('todayDate');
+  var checkBtn = document.getElementById('checkBtn');
+  var statsRow = document.getElementById('statsRow');
+  var gridBody = document.getElementById('gridBody');
+  var missedList = document.getElementById('missedList');
+
+  function buildGymDayList(weeksBack){
+    var today = todayDate(); today.setHours(0,0,0,0);
+    var days = [];
+    var wStart = startOfWeek(today);
+    for(var w=weeksBack-1; w>=0; w--){
+      var base = new Date(wStart);
+      base.setDate(base.getDate() - w*7);
+      var mon = new Date(base);
+      var wed = new Date(base); wed.setDate(wed.getDate()+2);
+      var fri = new Date(base); fri.setDate(fri.getDate()+4);
+      var sun = new Date(base); sun.setDate(sun.getDate()+6);
+      days.push({weekStart: base, entries: [
+        {label:'Mon', date: mon}, {label:'Wed', date: wed},
+        {label:'Fri', date: fri}, {label:'Sun', date: sun}
+      ]});
+    }
+    return days;
+  }
+
+  function renderToday(){
+    var today = todayDate();
+    todayDay.textContent = today.toLocaleDateString(undefined,{weekday:'long'});
+    todayDateEl.textContent = fmtShort(today);
+    var gym = isGymDay(today);
+    var tracked = isTracked(today);
+    todayCard.classList.toggle('rest', !gym && tracked);
+    todayCard.classList.toggle('notyet', !tracked);
+    var key = iso(today);
+    var rec = checkinsCache[key] || {};
+    if(!tracked){
+      var startNice = new Date(settings.startDate+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'});
+      checkBtn.textContent = 'Starts ' + startNice; checkBtn.className = 'check-btn'; checkBtn.disabled = true;
+    } else if(!gym){
+      checkBtn.textContent = 'Rest day'; checkBtn.className = 'check-btn'; checkBtn.disabled = true;
+    } else if(rec[currentUser]){
+      checkBtn.textContent = '✓ Checked in — tap to undo'; checkBtn.className = 'check-btn done'; checkBtn.disabled = false;
+    } else {
+      checkBtn.textContent = 'Check in'; checkBtn.className = 'check-btn'; checkBtn.disabled = false;
+    }
+  }
+
+  checkBtn.addEventListener('click', function(){
+    if(checkBtn.disabled) return;
+    var today = todayDate();
+    if(!isGymDay(today) || !isTracked(today)) return;
+    var key = iso(today);
+    var rec = checkinsCache[key] || {};
+    var wasChecked = !!rec[currentUser];
+    checkBtn.disabled = true;
+    checkBtn.textContent = wasChecked ? 'Undoing…' : 'Saving…';
+    api('checkin', {method:'POST', body:{name:currentUser, pin:currentPin, date:key, checked: !wasChecked}}).then(function(res){
+      checkinsCache[key] = res.checkin;
+      renderAll();
+    }).catch(function(){
+      checkBtn.disabled = false;
+    });
+  });
+
+  function trackedGymDays(){
+    var today = todayDate(); today.setHours(0,0,0,0);
+    var days = [];
+    var back = new Date(today);
+    for(var i=0;i<120;i++){
+      if(isGymDay(back) && back<=today && isTracked(back)){ days.push(new Date(back)); }
+      back.setDate(back.getDate()-1);
+      if(iso(back) < settings.startDate) break;
+    }
+    days.reverse();
+    return days;
+  }
+
+  function computeStats(){
+    var stats = {};
+    Object.keys(PEOPLE).forEach(function(p){ stats[p] = {done:0, total:0, streak:0, missed:0}; });
+    var today = todayDate(); today.setHours(0,0,0,0);
+    var allGymDays = trackedGymDays();
+    Object.keys(PEOPLE).forEach(function(p){
+      var streak = 0, broken=false;
+      for(var j=allGymDays.length-1;j>=0;j--){
+        var d = allGymDays[j];
+        var key = iso(d);
+        var rec = checkinsCache[key] || {};
+        var isToday = key===iso(today);
+        if(rec[p]){
+          stats[p].done++;
+          if(!broken) streak++;
+        } else if(!isToday){
+          stats[p].missed++; broken = true;
+        }
+      }
+      stats[p].total = allGymDays.length;
+      stats[p].streak = streak;
+    });
+    return stats;
+  }
+
+  function computePot(stats){
+    var pot = {}; var total = 0;
+    Object.keys(PEOPLE).forEach(function(p){
+      var amt = (stats[p].missed || 0) * settings.penaltyAmount;
+      pot[p] = amt; total += amt;
+    });
+    pot.total = total;
+    return pot;
+  }
+
+  function renderStats(stats){
+    statsRow.innerHTML = '';
+    Object.keys(PEOPLE).forEach(function(p){
+      var s = stats[p];
+      var pct = s.total ? Math.round((s.done/s.total)*100) : 0;
+      var card = document.createElement('div');
+      card.className = 'stat-card';
+      card.innerHTML =
+        '<div class="who-line"><span class="sw" style="background:'+PEOPLE[p].color+'"></span><span class="nm">'+PEOPLE[p].label+'</span></div>'+
+        '<div class="stat-num">'+s.streak+'</div>'+
+        '<div class="stat-lbl">session streak</div>'+
+        '<div class="stat-sub">'+s.done+' / '+s.total+' attended ('+pct+'%)</div>';
+      statsRow.appendChild(card);
+    });
+  }
+
+  var potTotalEl = document.getElementById('potTotal');
+  var potPeopleEl = document.getElementById('potPeople');
+  function fmtEuro(n){
+    return '€' + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits: n%1?2:0, maximumFractionDigits:2});
+  }
+  function renderPot(stats){
+    var pot = computePot(stats);
+    potTotalEl.textContent = fmtEuro(pot.total);
+    potPeopleEl.innerHTML = '';
+    Object.keys(PEOPLE).forEach(function(p){
+      var s = stats[p];
+      var div = document.createElement('div');
+      div.className = 'pot-person';
+      div.style.borderLeftColor = PEOPLE[p].color;
+      div.innerHTML =
+        '<div class="who-line"><span class="sw" style="background:'+PEOPLE[p].color+'"></span><span class="nm">'+PEOPLE[p].label+'</span></div>'+
+        '<div class="amt">'+fmtEuro(pot[p])+'</div>'+
+        '<div class="sub">'+(s.missed||0)+' missed &times; €'+settings.penaltyAmount+'</div>';
+      potPeopleEl.appendChild(div);
+    });
+  }
+
+  function renderGrid(){
+    var weeks = buildGymDayList(6);
+    var today = todayDate(); today.setHours(0,0,0,0);
+    gridBody.innerHTML = '';
+    weeks.forEach(function(week){
+      var tr = document.createElement('tr');
+      var isCurrentWeek = today>=week.weekStart && today < new Date(week.weekStart.getTime()+7*86400000);
+      if(isCurrentWeek) tr.className = 'row-today';
+      var tdLabel = document.createElement('td');
+      tdLabel.textContent = fmtShort(week.weekStart);
+      tr.appendChild(tdLabel);
+      week.entries.forEach(function(entry){
+        var td = document.createElement('td');
+        var key = iso(entry.date);
+        var future = entry.date > today || !isTracked(entry.date);
+        if(future){
+          td.innerHTML = '<span class="mark future">·</span>';
+        } else {
+          var rec = checkinsCache[key] || {};
+          var kOk = !!rec.kasem, mOk = !!rec.moussa;
+          td.innerHTML =
+            '<span class="mark '+(kOk?'yes':'no')+'" title="Kasem" style="margin-right:3px;">'+(kOk?'K':'✕')+'</span>'+
+            '<span class="mark '+(mOk?'yes':'no')+'" title="Moussa">'+(mOk?'M':'✕')+'</span>';
+        }
+        tr.appendChild(td);
+      });
+      gridBody.appendChild(tr);
+    });
+  }
+
+  function renderMissed(){
+    var today = todayDate(); today.setHours(0,0,0,0);
+    var items = [];
+    var back = new Date(today);
+    back.setDate(back.getDate()-1);
+    for(var i=0;i<28 && items.length<10 && iso(back)>=settings.startDate;i++){
+      if(isGymDay(back)){
+        var key = iso(back);
+        var rec = checkinsCache[key] || {};
+        Object.keys(PEOPLE).forEach(function(p){
+          if(!rec[p]) items.push({date:new Date(back), person:p});
+        });
+      }
+      back.setDate(back.getDate()-1);
+    }
+    missedList.innerHTML = '';
+    if(items.length===0){
+      missedList.innerHTML = '<div class="empty-note">No missed sessions in the last 4 weeks. Solid.</div>';
+      return;
+    }
+    items.slice(0,10).forEach(function(it){
+      var row = document.createElement('div');
+      row.className = 'missed-item';
+      row.innerHTML =
+        '<span class="who-line"><span class="sw" style="background:'+PEOPLE[it.person].color+'"></span>'+PEOPLE[it.person].label+' missed</span>'+
+        '<span class="d">'+it.date.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'})+'</span>';
+      missedList.appendChild(row);
+    });
+  }
+
+  function renderAll(){
+    renderToday();
+    var stats = computeStats();
+    renderStats(stats);
+    renderGrid();
+    renderMissed();
+    renderPot(stats);
+  }
+
+  function refreshCheckins(){
+    return api('checkins').then(function(res){
+      checkinsCache = res.checkins || {};
+      if(currentUser) renderAll();
+    }).catch(function(){});
+  }
+
+  function loadSettings(){
+    return api('settings').then(function(res){
+      if(res.settings){
+        settings.startDate = res.settings.startDate;
+        settings.penaltyAmount = res.settings.penaltyAmount;
+      }
+    }).catch(function(){});
+  }
+
+  function startPolling(){
+    loadSettings().then(refreshCheckins);
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function(){ loadSettings().then(refreshCheckins); }, 15000);
+  }
+
+  var saved = loadSession();
+  if(saved.name && saved.pin && PEOPLE[saved.name]){
+    currentUser = saved.name;
+    currentPin = saved.pin;
+    loginCard.classList.add('hide');
+    app.classList.add('show');
+    whoBar.hidden = false;
+    whoName.textContent = PEOPLE[saved.name].label;
+    startPolling();
+  }
+})();
+</script>
+</body>
+</html>
