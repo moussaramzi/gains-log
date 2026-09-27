@@ -62,6 +62,14 @@
   .settings-msg{font-size:12px;font-weight:600;color:var(--good);margin-top:8px;min-height:14px;}
   .settings-note{font-size:11px;color:var(--text-dim);margin-top:2px;}
 
+  .pending-banner{background:color-mix(in srgb, var(--accent) 14%, var(--surface));border:1px solid var(--accent);border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:13px;}
+  .pending-banner .pb-text{margin-bottom:10px;font-weight:600;}
+  .pending-banner .pb-actions{display:flex;gap:8px;}
+  .pending-banner button{border:none;border-radius:8px;padding:8px 14px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;}
+  .pending-banner .pb-confirm{background:var(--good);color:#fff;}
+  .pending-banner .pb-reject{background:var(--surface-2);color:var(--text);border:1px solid var(--border)!important;}
+  .pending-banner button:disabled{opacity:0.5;cursor:not-allowed;}
+
   .pot-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;}
   .pot-total-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
   .pot-total-lbl{font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;}
@@ -190,8 +198,10 @@
       </div>
       <button class="settings-save" id="settingsSave" type="button">Save</button>
       <div class="settings-msg" id="settingsMsg"></div>
-      <div class="settings-note">Days before the start date aren't tracked or penalized.</div>
+      <div class="settings-note">Days before the start date aren't tracked or penalized. A changed penalty amount needs the other person to confirm before it applies.</div>
     </div>
+
+    <div class="pending-banner" id="pendingBanner" hidden></div>
 
     <div class="today-card" id="todayCard">
       <div class="today-left">
@@ -253,7 +263,7 @@
     var t = new Date(); t.setHours(0,0,0,0); t.setDate(t.getDate()+1);
     return iso(t);
   }
-  var settings = { startDate: tomorrowIso(), penaltyAmount: 5 };
+  var settings = { startDate: tomorrowIso(), penaltyAmount: 5, pendingAmount: null, pendingBy: null, pendingAt: null };
   function todayDate(){ return new Date(); }
   function isGymDay(d){ return GYM_DOWS.indexOf(d.getDay())!==-1; }
   function isTracked(d){ return iso(d) >= settings.startDate; }
@@ -307,6 +317,7 @@
   var penaltyInput = document.getElementById('penaltyInput');
   var settingsSave = document.getElementById('settingsSave');
   var settingsMsg = document.getElementById('settingsMsg');
+  var pendingBanner = document.getElementById('pendingBanner');
 
   settingsBtn.addEventListener('click', function(){
     startDateInput.value = settings.startDate;
@@ -315,16 +326,25 @@
     settingsPanel.classList.toggle('show');
   });
 
+  function applySettings(newSettings){
+    settings.startDate = newSettings.startDate;
+    settings.penaltyAmount = newSettings.penaltyAmount;
+    settings.pendingAmount = newSettings.pendingAmount != null ? newSettings.pendingAmount : null;
+    settings.pendingBy = newSettings.pendingBy || null;
+    settings.pendingAt = newSettings.pendingAt || null;
+  }
+
   settingsSave.addEventListener('click', function(){
     var newStart = startDateInput.value || settings.startDate;
     var newPenalty = parseFloat(penaltyInput.value);
     if(isNaN(newPenalty) || newPenalty < 0) newPenalty = settings.penaltyAmount;
     settingsSave.disabled = true;
     settingsSave.textContent = 'Saving…';
-    api('settings', {method:'POST', body:{startDate:newStart, penaltyAmount:newPenalty}}).then(function(res){
-      settings.startDate = res.settings.startDate;
-      settings.penaltyAmount = res.settings.penaltyAmount;
-      settingsMsg.textContent = 'Saved.';
+    api('settings', {method:'POST', body:{name:currentUser, pin:currentPin, startDate:newStart, penaltyAmount:newPenalty}}).then(function(res){
+      applySettings(res.settings);
+      settingsMsg.textContent = (res.settings.pendingAmount != null && res.settings.pendingBy === currentUser)
+        ? 'Saved. Waiting on the other person to confirm the new penalty.'
+        : 'Saved.';
       renderAll();
     }).catch(function(){
       settingsMsg.textContent = 'Could not save — try again.';
@@ -333,6 +353,46 @@
       settingsSave.textContent = 'Save';
     });
   });
+
+  function renderPendingBanner(){
+    if(settings.pendingAmount == null){
+      pendingBanner.hidden = true;
+      pendingBanner.innerHTML = '';
+      return;
+    }
+    pendingBanner.hidden = false;
+    var proposer = PEOPLE[settings.pendingBy] ? PEOPLE[settings.pendingBy].label : 'Someone';
+    var isProposer = settings.pendingBy === currentUser;
+    var amt = fmtEuro(settings.pendingAmount);
+    if(isProposer){
+      pendingBanner.innerHTML =
+        '<div class="pb-text">You proposed changing the penalty to '+amt+' per missed day — waiting for the other person to confirm.</div>'+
+        '<div class="pb-actions"><button class="pb-reject" id="pbCancel" type="button">Cancel proposal</button></div>';
+      var cancelBtn = document.getElementById('pbCancel');
+      cancelBtn.addEventListener('click', function(){ settingsAction('reject', cancelBtn); });
+    } else {
+      pendingBanner.innerHTML =
+        '<div class="pb-text">'+proposer+' wants to change the penalty to '+amt+' per missed day.</div>'+
+        '<div class="pb-actions">'+
+          '<button class="pb-confirm" id="pbConfirm" type="button">Confirm</button>'+
+          '<button class="pb-reject" id="pbReject" type="button">Reject</button>'+
+        '</div>';
+      var confirmBtn = document.getElementById('pbConfirm');
+      var rejectBtn = document.getElementById('pbReject');
+      confirmBtn.addEventListener('click', function(){ settingsAction('confirm', confirmBtn); });
+      rejectBtn.addEventListener('click', function(){ settingsAction('reject', rejectBtn); });
+    }
+  }
+
+  function settingsAction(action, btn){
+    btn.disabled = true;
+    api('settings/'+action, {method:'POST', body:{name:currentUser, pin:currentPin}}).then(function(res){
+      applySettings(res.settings);
+      renderAll();
+    }).catch(function(){
+      btn.disabled = false;
+    });
+  }
 
   document.querySelectorAll('.person-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -615,6 +675,7 @@
     renderGrid();
     renderMissed();
     renderPot(stats);
+    renderPendingBanner();
   }
 
   function refreshCheckins(){
@@ -626,10 +687,7 @@
 
   function loadSettings(){
     return api('settings').then(function(res){
-      if(res.settings){
-        settings.startDate = res.settings.startDate;
-        settings.penaltyAmount = res.settings.penaltyAmount;
-      }
+      if(res.settings) applySettings(res.settings);
     }).catch(function(){});
   }
 
