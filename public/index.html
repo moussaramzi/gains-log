@@ -125,6 +125,11 @@
   .stat-sub{font-size:11px;color:var(--text-dim);margin-top:8px;font-weight:500;}
 
   .section-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:0.3px;margin:0 0 10px;}
+  .grid-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+  .grid-header .section-title{margin:0;}
+  .view-tabs{display:flex;gap:3px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:3px;}
+  .view-tabs button{background:none;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--text-dim);cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .view-tabs button.active{background:var(--accent);color:var(--accent-ink);}
   .grid-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 14px 6px;margin-bottom:20px;overflow-x:auto;}
   table{border-collapse:collapse;width:100%;min-width:420px;}
   th{font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-dim);font-weight:700;text-align:center;padding:6px 4px 10px;}
@@ -135,7 +140,8 @@
   .mark.yes{background:var(--good);color:#fff;}
   .mark.no{background:var(--bad);color:#fff;}
   .mark.future{background:var(--surface-2);color:var(--text-dim);}
-  .row-today td{background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .row-today td{background:color-mix(in srgb, var(--accent) 14%, transparent);}
+  .row-today td:first-child{color:var(--accent);font-weight:800;box-shadow:inset 3px 0 0 var(--accent);}
 
   .missed-list{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;}
   .missed-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:13px;}
@@ -213,7 +219,14 @@
 
     <div class="stats-row" id="statsRow"></div>
 
-    <h2 class="section-title">Last 6 weeks</h2>
+    <div class="grid-header">
+      <h2 class="section-title" id="gridTitle">This week</h2>
+      <div class="view-tabs" id="viewTabs">
+        <button type="button" data-view="week">Week</button>
+        <button type="button" data-view="2weeks">2 Weeks</button>
+        <button type="button" data-view="month">Month</button>
+      </div>
+    </div>
     <div class="grid-card">
       <table>
         <thead>
@@ -318,6 +331,35 @@
   var settingsSave = document.getElementById('settingsSave');
   var settingsMsg = document.getElementById('settingsMsg');
   var pendingBanner = document.getElementById('pendingBanner');
+  var gridTitle = document.getElementById('gridTitle');
+  var viewTabs = document.getElementById('viewTabs');
+
+  var VIEW_WEEKS = { week: 1, '2weeks': 2, month: 4 };
+  var VIEW_LABELS = { week: 'This week', '2weeks': 'Last 2 weeks', month: 'Last month' };
+  function loadView(){
+    try{
+      var v = localStorage.getItem('gains-log-view');
+      return VIEW_WEEKS[v] ? v : 'week';
+    }catch(e){ return 'week'; }
+  }
+  function saveView(v){ try{ localStorage.setItem('gains-log-view', v); }catch(e){} }
+  var gridView = loadView();
+
+  function updateViewTabs(){
+    viewTabs.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-view')===gridView);
+    });
+    gridTitle.textContent = VIEW_LABELS[gridView];
+  }
+  viewTabs.querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      gridView = btn.getAttribute('data-view');
+      saveView(gridView);
+      updateViewTabs();
+      renderGrid();
+    });
+  });
+  updateViewTabs();
 
   settingsBtn.addEventListener('click', function(){
     startDateInput.value = settings.startDate;
@@ -609,7 +651,7 @@
   }
 
   function renderGrid(){
-    var weeks = buildGymDayList(6);
+    var weeks = buildGymDayList(VIEW_WEEKS[gridView] || 1);
     var today = todayDate(); today.setHours(0,0,0,0);
     gridBody.innerHTML = '';
     weeks.forEach(function(week){
