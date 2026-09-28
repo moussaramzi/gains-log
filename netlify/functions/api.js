@@ -22,6 +22,7 @@ export default async (req) => {
   const pinsStore = getStore("pins");
   const checkinsStore = getStore("checkins");
   const settingsStore = getStore("settings");
+  const cheatDaysStore = getStore("cheatdays");
 
   try {
     if (req.method === "GET" && path === "checkins") {
@@ -115,6 +116,85 @@ export default async (req) => {
       current.updatedAt = new Date().toISOString();
       await settingsStore.setJSON("config", current);
       return json({ ok: true, settings: current });
+    }
+
+    if (req.method === "GET" && path === "cheatdays") {
+      const result = {};
+      for (const name of PEOPLE) {
+        result[name] = (await cheatDaysStore.get(name, { type: "json" })) || [];
+      }
+      return json(result);
+    }
+
+    if (req.method === "POST" && path === "cheatdays") {
+      const body = await req.json();
+      const name = String(body.name || "").toLowerCase();
+      const pin = String(body.pin || "");
+      const date = String(body.date || "");
+      if (!PEOPLE.includes(name)) return json({ ok: false, error: "unknown name" }, 400);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ ok: false, error: "bad date" }, 400);
+
+      const existingPin = await pinsStore.get(name, { type: "json" });
+      if (!existingPin || existingPin.pin !== pin) return json({ ok: false, error: "unauthorized" }, 401);
+
+      const month = date.slice(0, 7);
+      const records = (await cheatDaysStore.get(name, { type: "json" })) || [];
+      const alreadyActive = records.some((r) => r.month === month && r.status !== "rejected");
+      if (alreadyActive) return json({ ok: false, error: "You've already used your cheat day for that month." }, 400);
+
+      records.push({
+        date,
+        month,
+        status: "pending",
+        proposedAt: new Date().toISOString(),
+        confirmedBy: null,
+        confirmedAt: null
+      });
+      await cheatDaysStore.setJSON(name, records);
+      return json({ ok: true, records });
+    }
+
+    if (req.method === "POST" && path === "cheatdays/confirm") {
+      const body = await req.json();
+      const name = String(body.name || "").toLowerCase();
+      const pin = String(body.pin || "");
+      const owner = String(body.owner || "").toLowerCase();
+      if (!PEOPLE.includes(name) || !PEOPLE.includes(owner)) return json({ ok: false, error: "unknown name" }, 400);
+      if (name === owner) return json({ ok: false, error: "the other person needs to confirm this cheat day" }, 403);
+
+      const existingPin = await pinsStore.get(name, { type: "json" });
+      if (!existingPin || existingPin.pin !== pin) return json({ ok: false, error: "unauthorized" }, 401);
+
+      const records = (await cheatDaysStore.get(owner, { type: "json" })) || [];
+      const idx = records.map((r) => r.status).lastIndexOf("pending");
+      if (idx === -1) return json({ ok: false, error: "no pending cheat day" }, 400);
+
+      records[idx].status = "confirmed";
+      records[idx].confirmedBy = name;
+      records[idx].confirmedAt = new Date().toISOString();
+      await cheatDaysStore.setJSON(owner, records);
+      return json({ ok: true, records });
+    }
+
+    if (req.method === "POST" && path === "cheatdays/reject") {
+      const body = await req.json();
+      const name = String(body.name || "").toLowerCase();
+      const pin = String(body.pin || "");
+      const owner = String(body.owner || "").toLowerCase();
+      if (!PEOPLE.includes(name) || !PEOPLE.includes(owner)) return json({ ok: false, error: "unknown name" }, 400);
+
+      const existingPin = await pinsStore.get(name, { type: "json" });
+      if (!existingPin || existingPin.pin !== pin) return json({ ok: false, error: "unauthorized" }, 401);
+
+      const records = (await cheatDaysStore.get(owner, { type: "json" })) || [];
+      const idx = records.map((r) => r.status).lastIndexOf("pending");
+      if (idx === -1) return json({ ok: false, error: "no pending cheat day" }, 400);
+
+      records[idx].status = "rejected";
+      records[idx].rejectedBy = name;
+      records[idx].rejectedAt = new Date().toISOString();
+      await cheatDaysStore.setJSON(owner, records);
+      return json({ ok: true, records });
     }
 
     if (req.method === "POST" && path === "login") {
